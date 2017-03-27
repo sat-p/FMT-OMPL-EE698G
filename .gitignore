@@ -27,3 +27,7 @@
 *.exe
 *.out
 *.app
+
+# OMPL source code
+
+ompl-1.3.0-Source/

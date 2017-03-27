@@ -1,0 +1,7 @@
+This repository makes use of the following library :
+    http://ompl.kavrakilab.org/core/index.html
+
+The algorithm being tested out is :
+    “Fast Marching Trees: a Fast Marching Sampling-Based Method for Optimal
+     Motion Planning in Many Dimensions”
+     https://web.stanford.edu/~pavone/papers/Janson.Pavone.ISRR13.pdf
