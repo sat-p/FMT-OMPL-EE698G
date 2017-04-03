@@ -13,7 +13,8 @@ include_directories(${solverdir}
                     ${ompl_INCLUDE_DIRS})
 
 #Adding sources
-set(SOURCES ${solverdir}/code/app/src/Application.cxx)
+set(SOURCES ${solverdir}/code/app/src/Application.cxx
+            ${solverdir}/code/planners/src/FMT.cxx)
 
 #Compile
 add_executable(ee698g ${SOURCES})
