@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include <iostream>
+
 /************************************************************************/
 
 namespace PMR = ompl::geometric::EE698G;
@@ -14,8 +16,7 @@ static constexpr double maxDouble = std::numeric_limits<double>::max();
 /************************************************************************/
 
 PMR::FMT::FMT (const base::SpaceInformationPtr &si) :
-    ompl::base::Planner (si, "PMR EE698G"),
-    sampler_            (si->allocStateSampler())
+    ompl::base::Planner (si, "PMR EE698G")
 {
     /*
      * Declaring parameters.
@@ -42,6 +43,9 @@ PMR::FMT::~FMT (void)
 
 void PMR::FMT::setup (void)
 {
+    // Setting up the sampler
+    sampler_ = si_->allocStateSampler();
+    
     // Checking if the problem definition has been set
     if (!pdef_) {
     
@@ -68,11 +72,6 @@ void PMR::FMT::setup (void)
     V_.setDistanceFunction ([this](const ompl::base::State* x1,
                                    const ompl::base::State* x2)
                             { return opt_->motionCost(x1, x2).value(); });
-    
-    // Checking if current state is valid.
-    // Calls parent class's member function checkValidity();
-    // Throws exception if the planner is in an invalid state.
-    checkValidity();
     
     setup_ = true;
 }
@@ -117,6 +116,11 @@ void PMR::FMT::free (void)
 ompl::base::PlannerStatus
 PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
 {
+    // Checking if current state is valid.
+    // Calls parent class's member function checkValidity();
+    // Throws exception if the planner is in an invalid state.
+    checkValidity();
+    
     // Checking if start states are available
     if (!pis_.haveMoreStartStates()) {
     
@@ -125,29 +129,25 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     }
     
     /*
-     * Clearing data of previous run
-     */
-    
-    clear();
-    
-    /*
      * Adding start states to V_ and V_open_
      */
-    
+    OMPL_DEBUG ("%s: calling sampleStart()", getName().c_str());
     sampleStart();
     
     /*
      * Sampling N states from the free configuration space.
      */
-    
+    OMPL_DEBUG ("%s: calling sampleFree()", getName().c_str());
     sampleFree (tc);
     
     /*
      * Ensuring that there are states near the goals
      */
     
+    OMPL_DEBUG ("%s: About to perform dynamic_cast", getName().c_str());
     auto* goal = dynamic_cast<ompl::base::GoalSampleableRegion*> (
                                                 pdef_->getGoal().get());
+    OMPL_DEBUG ("%s: Performed dynamic_cast", getName().c_str());
     
     // Checking if goal is valid
     if (!goal) {
@@ -156,8 +156,9 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
         return ompl::base::PlannerStatus::UNRECOGNIZED_GOAL_TYPE;
     }
     
+    OMPL_DEBUG ("%s: calling sampleGoal()", getName().c_str());
     sampleGoal (goal);
-    
+    OMPL_DEBUG ("%s: called sampleGoal()", getName().c_str());
     /*
      * Initialization for the main loop
      */
@@ -172,6 +173,7 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     
     saveNear (z);
     
+    OMPL_DEBUG ("%s: About to the enter the main loop", getName().c_str());
     /*
      * The main loop
      */
@@ -296,15 +298,12 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
         
             ++numSampled;
             
-            //V_unvisited_.push_back (sample);
             V_.add (sample);
             auxData_.emplace (sample, FMT_SetType::UNVISITED);
             
             sample = si_->allocState();
         }
     }
-    
-    //V_.add (V_unvisited_);
     
     si_->freeState (sample);
     
@@ -316,21 +315,29 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
 
 void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
 {
+    OMPL_DEBUG ("%s: calling getThreshold()", getName().c_str());
     const auto threshold = goal->getThreshold();
+    
+    
+    OMPL_DEBUG ("%s: About to the enter the loop present in sampleGoal",
+                getName().c_str());
     
     // Ensuring that there a valid state near each goal.
     while (const ompl::base::State* goalState = pis_.nextGoal()) {
         
-        ompl::base::State* nearest;
+        
+        ompl::base::State* nearest = si_->allocState();
         V_.nearest (nearest);
         
         // if nearest neighbor is further than threshold
         if (opt_->motionCost(goalState, nearest).value() > threshold) {
             
-            //V_unvisited_.push_back (goalState);
-            V_.add (goalState);
+            si_->copyState (nearest, goalState);
+            V_.add (nearest);
             auxData_.emplace (goalState, FMT_SetType::UNVISITED);
         }
+        else
+            si_->freeState (nearest);
     }
 }
 
