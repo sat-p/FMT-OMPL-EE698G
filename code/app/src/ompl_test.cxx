@@ -8,8 +8,6 @@
 
 #include "../include/ompl_test.h"
 
-//#include <ompl/geometric/planners/fmt/FMT.h>
-
 /************************************************************************/
 
 void OMPL_TEST::planWithoutSimpleSetup (void)
@@ -57,11 +55,9 @@ void OMPL_TEST::planWithoutSimpleSetup (void)
     // Prints
     spaceInformation->printSettings(std::cerr);
     pdef->print(std::cerr);
-    
-    std::cerr << "Attempting to solve " << std::endl;
+
     // attempt to solve the problem in 1 second
     auto solved = planner->ob::Planner::solve (1.0);
-    std::cerr << "Called solve " << std::endl;
     
     if (solved)
     {
@@ -70,12 +66,10 @@ void OMPL_TEST::planWithoutSimpleSetup (void)
         if (path)
             path->print (std::cerr);
     }
-    else {
+    else
         std::cerr << "No solution found" << std::endl;
-    }
     
     std::cerr << "Reached end of plan" << std::endl;
-    while (1);
 }
 
 /************************************************************************/

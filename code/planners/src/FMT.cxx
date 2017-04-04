@@ -1,6 +1,7 @@
 #include "../include/FMT.h"
 
 #include <cmath>
+#include <stack>
 
 /************************************************************************/
 
@@ -190,6 +191,8 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
             OMPL_DEBUG ("%s: Found solution", getName().c_str());
             goal_ = z;
             
+            addSolutionPath();
+            
             typedef ompl::base::PlannerStatus PS;
             return PS (PS::StatusType::EXACT_SOLUTION);
         }
@@ -274,6 +277,34 @@ void PMR::FMT::getPlannerData (ompl::base::PlannerData &data) const
         else
             data.addStartVertex (aux.first);
     }
+}
+
+/************************************************************************/
+
+void PMR::FMT::addSolutionPath (void)
+{
+    if (goal_ == nullptr)
+        return;
+    
+    std::stack<const ompl::base::State*> stack;
+    
+    auto path (std::make_shared<ompl::geometric::PathGeometric> (si_));
+    
+    const ompl::base::State* node = goal_;
+    
+    while (node) {
+    
+        stack.push (node);
+        node = auxData_.at(node).parent;
+    }
+    
+    while (stack.size()) {
+    
+        path->append (stack.top());
+        stack.pop();
+    }
+    
+    pdef_->addSolutionPath (path);
 }
 
 /************************************************************************/

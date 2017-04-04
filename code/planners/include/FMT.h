@@ -96,6 +96,9 @@ public:
     
     double getDistMultiplier (void) const
     { return distMultiplier_; }
+
+protected:
+    void addSolutionPath (void);
     
 protected:
     /*
