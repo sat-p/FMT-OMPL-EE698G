@@ -26,23 +26,36 @@ typedef std::vector<const ompl::base::State*> stateVector;
 
 /************************************************************************/
 
+enum class FMT_SetType
+{
+    OPEN,
+    UNVISITED,
+    CLOSED
+};
+
+/************************************************************************/
+/************************************************************************/
+
 struct FMT_AuxData
 {
 public:
-    FMT_AuxData (void) :
+    FMT_AuxData (FMT_SetType _setType) :
+        setType     (_setType),
         nnSearched  (false),
         cost        (std::numeric_limits<double>::max())
     {}
     
-    FMT_AuxData (const double _cost) :
+    FMT_AuxData (FMT_SetType _setType, const double _cost) :
+        setType     (_setType),
         nnSearched  (false),
         cost        (_cost)
     {}
     
 public:
-    bool nnSearched;
-    double cost;
-    stateVector nbh;
+    FMT_SetType  setType;
+    bool         nnSearched;
+    double       cost;
+    stateVector  nbh;
 }; // struct FMT_Aux
 
 /************************************************************************/

@@ -157,8 +157,11 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
         
         stateVector V_open_new;
         
-//         auto X_near = 
+        const auto& zData = auxData_.at (z);
         
+        for (const auto& x :  zData.nbh) {
+        
+        }
     }
     
     typedef ompl::base::PlannerStatus PS;
@@ -182,7 +185,9 @@ void PMR::FMT::sampleStart (void)
     
         V_.add (start);
         V_open_.push_back (start);
-        auxData_[start];
+        auxData_.emplace (std::piecewise_construct,
+                          std::forward_as_tuple (start),
+                          std::forward_as_tuple (FMT_SetType::OPEN, 0));
     }
 }
 
@@ -209,7 +214,7 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
             ++numSampled;
             
             V_unvisited_.push_back (sample);
-            auxData_[sample];
+            auxData_.emplace (sample, FMT_SetType::UNVISITED);
             
             sample = si_->allocState();
         }
@@ -240,7 +245,7 @@ void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
             
             V_unvisited_.push_back (goalState);
             V_.add (goalState);
-            auxData_.emplace (goalState, 0);
+            auxData_.emplace (goalState, FMT_SetType::UNVISITED);
         }
     }
 }
@@ -250,12 +255,15 @@ void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
 
 void PMR::FMT::saveNear (const ompl::base::State* z)
 {
-    auto& zData = auxData_[z];
+    auto& zData = auxData_.at (z);
     
     if (zData.nnSearched)
         return;
-    else
+    else {
+        
+        zData.nnSearched = true;
         V_.nearestR (z, r_n_, zData.nbh);
+    }
 }
 
 /************************************************************************/
