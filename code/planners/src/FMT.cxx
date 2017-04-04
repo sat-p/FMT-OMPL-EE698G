@@ -78,6 +78,20 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     // Sampling N states from the free configuration space.
     sampleFree (tc);
     
+    /********** Ensuring that there are states near the goals ***********/
+    
+    auto* goal = dynamic_cast<ompl::base::GoalSampleableRegion*> (
+                                                pdef_->getGoal().get());
+    
+    // Checking if goal is valid
+    if (!goal) {
+        
+        OMPL_ERROR ("%s: Invalid Goal", getName().c_str());
+        return ompl::base::PlannerStatus::UNRECOGNIZED_GOAL_TYPE;
+    }
+    
+    sampleGoal (goal);
+    
     return PS (PS::StatusType::EXACT_SOLUTION);
 }
 
@@ -119,6 +133,8 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
         }
     }
     
+    V_.add (V_unvisited_);
+    
     si_->freeState (sample);
 }
 
@@ -136,7 +152,8 @@ void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
         
         // if nearest neighbor is further than threshold
         if (opt_->motionCost(goalState, nearest).value() > threshold) {
-        
+            
+            V_unvisited_.push_back (goalState);
             V_.add (goalState);
         }
     }

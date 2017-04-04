@@ -74,7 +74,7 @@ protected:
     unsigned numSamples_;
     
 protected:
-    std::vector<ompl::base::State*> V_unvisited_;
+    std::vector<const ompl::base::State*> V_unvisited_;
     
 }; // class FMT
     
