@@ -63,7 +63,7 @@ public:
 class FMT : public ompl::base::Planner
 {
 protected:
-    static constexpr unsigned DEFAULT_NUM_SAMPLES = 10000;
+    static constexpr unsigned DEFAULT_NUM_SAMPLES = 1000;
     static constexpr double   DEFAULT_DIST_MULTIPLIER = 1.1;
     
 public:

@@ -8,6 +8,8 @@
 
 #include "../include/ompl_test.h"
 
+//#include <ompl/geometric/planners/fmt/FMT.h>
+
 /************************************************************************/
 
 void OMPL_TEST::planWithoutSimpleSetup (void)
@@ -44,6 +46,7 @@ void OMPL_TEST::planWithoutSimpleSetup (void)
     
     // creating a planner
     auto planner (std::make_shared<og::EE698G::FMT> (spaceInformation));
+    //auto planner (std::make_shared<og::FMT> (spaceInformation));
     
     // setting problem for the planner.
     planner->setProblemDefinition (pdef);
@@ -52,21 +55,27 @@ void OMPL_TEST::planWithoutSimpleSetup (void)
     planner->setup();
     
     // Prints
-    spaceInformation->printSettings(std::cout);
-    pdef->print(std::cout);
+    spaceInformation->printSettings(std::cerr);
+    pdef->print(std::cerr);
     
+    std::cerr << "Attempting to solve " << std::endl;
     // attempt to solve the problem in 1 second
     auto solved = planner->ob::Planner::solve (1.0);
+    std::cerr << "Called solve " << std::endl;
     
     if (solved)
     {
         auto path = pdef->getSolutionPath();
-        std::cout << "Found solution" << std::endl;
-        path->print (std::cout);
+        std::cerr << "Found solution" << std::endl;
+        if (path)
+            path->print (std::cerr);
     }
-    else
-        std::cout << "No solution found" << std::endl;
+    else {
+        std::cerr << "No solution found" << std::endl;
+    }
     
+    std::cerr << "Reached end of plan" << std::endl;
+    while (1);
 }
 
 /************************************************************************/

@@ -2,8 +2,6 @@
 
 #include <cmath>
 
-#include <iostream>
-
 /************************************************************************/
 
 namespace PMR = ompl::geometric::EE698G;
@@ -36,6 +34,7 @@ PMR::FMT::FMT (const base::SpaceInformationPtr &si) :
 
 PMR::FMT::~FMT (void)
 {
+    free();
 }
 
 /************************************************************************/
@@ -174,13 +173,21 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     saveNear (z);
     
     OMPL_DEBUG ("%s: About to the enter the main loop", getName().c_str());
+    
+    OMPL_DEBUG ("%s: The number of samples : %u", getName().c_str(), numSamples_);
+    OMPL_DEBUG ("%s: The distMultiplier : %lf", getName().c_str(), distMultiplier_);
+    OMPL_DEBUG ("%s: The neighborDistance : %lf", getName().c_str(), r_n_);
+    
+    stateVector nodes;
+    V_.list (nodes);
+    
     /*
      * The main loop
      */
     while (!tc) {
         
         if (goal->isSatisfied (z)) {
-            
+            OMPL_DEBUG ("%s: Found solution", getName().c_str());
             goal_ = z;
             
             typedef ompl::base::PlannerStatus PS;
@@ -192,6 +199,7 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
         for (const auto& x : zData.nbh) {
             
             auto& xData = auxData_.at (x);
+            
             if (xData.setType == FMT_SetType::UNVISITED) {
             
                 saveNear (x);
@@ -199,9 +207,10 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
                 const ompl::base::State* bestParent = nullptr;
                 double bestCost = maxDouble;
                 
-                for (const auto& y : zData.nbh) {
-                    
-                    const auto& yData = auxData_.at (x);
+                for (const auto& y : xData.nbh) {
+            
+                    const auto& yData = auxData_.at (y);
+            
                     if (yData.setType == FMT_SetType::OPEN) {
                     
                         const double cost = yData.cost +
@@ -215,7 +224,7 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
                 }
                 
                 if (bestParent && si_->checkMotion (x, bestParent)) {
-                
+                    
                     xData.setType = FMT_SetType::OPEN;
                     xData.cost = bestCost;
                     xData.parent = bestParent;
@@ -236,10 +245,16 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     
     typedef ompl::base::PlannerStatus PS;
     
-    if (tc)
+    if (tc) {
+        
+        OMPL_DEBUG ("%s: Suffered from timout", getName().c_str());
         return PS (PS::StatusType::TIMEOUT);
-    else
+    }
+    else {
+        
+        OMPL_DEBUG ("%s: Did not suffer from timout", getName().c_str());
         return PS (PS::StatusType::ABORT);
+    }
 }
 
 /************************************************************************/
@@ -334,7 +349,7 @@ void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
             
             si_->copyState (nearest, goalState);
             V_.add (nearest);
-            auxData_.emplace (goalState, FMT_SetType::UNVISITED);
+            auxData_.emplace (nearest, FMT_SetType::UNVISITED);
         }
         else
             si_->freeState (nearest);
