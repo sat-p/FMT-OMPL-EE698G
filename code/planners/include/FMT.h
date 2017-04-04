@@ -5,6 +5,7 @@
 
 #include <ompl/geometric/planners/PlannerIncludes.h>
 #include <ompl/base/objectives/PathLengthOptimizationObjective.h>
+#include <ompl/base/goals/GoalSampleableRegion.h>
 #include <ompl/datastructures/NearestNeighborsGNAT.h>
 
 #include <vector>
@@ -43,10 +44,15 @@ public:
     
 protected:
     /*
-     * Function to sample N states from the free configuration space while
+     * Samples N states from the free configuration space while
      * termination condition is not met.
      */
     void sampleFree (const ompl::base::PlannerTerminationCondition &tc);
+    
+    /*
+     * Samples states near the goals if absent.
+     */
+    void sampleGoal (const ompl::base::GoalSampleableRegion* goal);
     
 protected:
     /*
@@ -62,7 +68,7 @@ protected:
     /*
      * The object used to perform the Near() query.
      */
-    ompl::NearestNeighborsGNAT<ompl::base::State*> V_;
+    ompl::NearestNeighborsGNAT<const ompl::base::State*> V_;
     
 protected:
     unsigned numSamples_;

@@ -123,4 +123,24 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
 }
 
 /************************************************************************/
+
+void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
+{
+    const auto threshold = goal->getThreshold();
+    
+    // Ensuring that there a valid state near each goal.
+    while (const ompl::base::State* goalState = pis_.nextGoal()) {
+        
+        ompl::base::State* nearest;
+        V_.nearest (nearest);
+        
+        // if nearest neighbor is further than threshold
+        if (opt_->motionCost(goalState, nearest).value() > threshold) {
+        
+            V_.add (goalState);
+        }
+    }
+}
+
+/************************************************************************/
 /************************************************************************/
