@@ -73,12 +73,28 @@ void PMR::FMT::clear (void)
 ompl::base::PlannerStatus
 PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
 {
-    typedef ompl::base::PlannerStatus PS;
+    // Checking if start states are available
+    if (!pis_.haveMoreStartStates()) {
     
-    // Sampling N states from the free configuration space.
+        OMPL_ERROR ("%s: Invalid Start", getName().c_str());
+        return ompl::base::PlannerStatus::INVALID_START;
+    }
+    
+    /*
+     * Adding start states to V_ and V_open_
+     */
+    
+    sampleStart();
+    
+    /*
+     * Sampling N states from the free configuration space.
+     */
+    
     sampleFree (tc);
     
-    /********** Ensuring that there are states near the goals ***********/
+    /*
+     * Ensuring that there are states near the goals
+     */
     
     auto* goal = dynamic_cast<ompl::base::GoalSampleableRegion*> (
                                                 pdef_->getGoal().get());
@@ -92,6 +108,7 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     
     sampleGoal (goal);
     
+    typedef ompl::base::PlannerStatus PS;
     return PS (PS::StatusType::EXACT_SOLUTION);
 }
 
@@ -106,6 +123,20 @@ void PMR::FMT::getPlannerData (ompl::base::PlannerData &data) const
 /************************************************************************/
 /************************************************************************/
 
+void PMR::FMT::sampleStart (void)
+{
+    V_open_.clear();
+    V_.clear();
+    
+    while (const ompl::base::State* start = pis_.nextStart()) {
+    
+        V_.add (start);
+        V_open_.push_back (start);
+    }
+}
+
+/************************************************************************/
+    
 void
 PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
 {

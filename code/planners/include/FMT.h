@@ -44,6 +44,11 @@ public:
     
 protected:
     /*
+     * Samples the start states
+     */
+    void sampleStart (void);
+    
+    /*
      * Samples N states from the free configuration space while
      * termination condition is not met.
      */
@@ -75,6 +80,7 @@ protected:
     
 protected:
     std::vector<const ompl::base::State*> V_unvisited_;
+    std::vector<const ompl::base::State*> V_open_;
     
 }; // class FMT
     
