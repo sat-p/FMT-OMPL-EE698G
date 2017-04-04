@@ -9,6 +9,7 @@ namespace PMR = ompl::geometric::EE698G;
 /************************************************************************/
 
 static constexpr double pi = 3.14159265359;
+static constexpr double maxDouble = std::numeric_limits<double>::max();
 
 /************************************************************************/
 
@@ -23,7 +24,7 @@ PMR::FMT::FMT (const base::SpaceInformationPtr &si) :
 PMR::FMT::~FMT (void)
 {
     
-}    
+}
 
 /************************************************************************/
 /************************************************************************/
@@ -74,14 +75,8 @@ void PMR::FMT::clear (void)
     
     V_.clear();
     
-    V_unvisited_.clear();
-    V_unvisited_.resize (reserveSize);
-    
-    V_open_.clear();
-    V_open_.reserve (reserveSize);
-    
-    V_closed_.clear();
-    V_closed_.reserve (reserveSize);
+    while (V_open_.size())
+        V_open_.pop();
     
     auxData_.clear();
     auxData_.reserve (reserveSize);
@@ -141,7 +136,11 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     r_n_ = neighborDistance();
     
     // Choosing one of the start states.
-    const ompl::base::State* z = V_open_.front(); 
+    double cost;
+    const ompl::base::State* z = nullptr;
+    
+    std::tie (cost, z) = V_open_.top(); 
+    
     saveNear (z);
     
     /*
@@ -155,13 +154,56 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
             return PS (PS::StatusType::EXACT_SOLUTION);
         }
         
-        stateVector V_open_new;
+        //stateVector V_open_new;
         
-        const auto& zData = auxData_.at (z);
+        auto& zData = auxData_.at (z);
         
-        for (const auto& x :  zData.nbh) {
-        
+        for (const auto& x : zData.nbh) {
+            
+            auto& xData = auxData_.at (x);
+            if (xData.setType == FMT_SetType::UNVISITED) {
+            
+                saveNear (x);
+                
+                const ompl::base::State* bestParent = nullptr;
+                double bestCost = maxDouble;
+                
+                for (const auto& y : zData.nbh) {
+                    
+                    const auto& yData = auxData_.at (x);
+                    if (yData.setType == FMT_SetType::OPEN) {
+                    
+                        const double cost = yData.cost +
+                                            opt_->motionCost (x, y).value();
+                        if (cost < bestCost) {
+                        
+                            bestCost = cost;
+                            bestParent = y;
+                        }
+                    }
+                }
+                
+                if (bestParent && si_->checkMotion (x, bestParent)) {
+                
+                    xData.setType = FMT_SetType::OPEN;
+                    xData.cost = bestCost;
+                    xData.parent = bestParent;
+                    
+                    V_open_.emplace (bestCost, x);
+                }
+            }
         }
+        
+        zData.setType = FMT_SetType::CLOSED;
+        V_open_.pop();
+        
+        if (V_open_.empty()) {
+        
+            typedef ompl::base::PlannerStatus PS;
+            return PS (PS::StatusType::ABORT);
+        }
+        
+        std::tie (cost, z) = V_open_.top();
     }
     
     typedef ompl::base::PlannerStatus PS;
@@ -184,7 +226,7 @@ void PMR::FMT::sampleStart (void)
     while (const ompl::base::State* start = pis_.nextStart()) {
     
         V_.add (start);
-        V_open_.push_back (start);
+        V_open_.emplace (0, start);
         auxData_.emplace (std::piecewise_construct,
                           std::forward_as_tuple (start),
                           std::forward_as_tuple (FMT_SetType::OPEN, 0));
@@ -213,14 +255,15 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
         
             ++numSampled;
             
-            V_unvisited_.push_back (sample);
+            //V_unvisited_.push_back (sample);
+            V_.add (sample);
             auxData_.emplace (sample, FMT_SetType::UNVISITED);
             
             sample = si_->allocState();
         }
     }
     
-    V_.add (V_unvisited_);
+    //V_.add (V_unvisited_);
     
     si_->freeState (sample);
     
@@ -243,7 +286,7 @@ void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
         // if nearest neighbor is further than threshold
         if (opt_->motionCost(goalState, nearest).value() > threshold) {
             
-            V_unvisited_.push_back (goalState);
+            //V_unvisited_.push_back (goalState);
             V_.add (goalState);
             auxData_.emplace (goalState, FMT_SetType::UNVISITED);
         }

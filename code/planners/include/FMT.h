@@ -11,6 +11,8 @@
 #include <vector>
 #include <unordered_map>
 //#include <map>
+#include <queue>
+#include <utility>
 #include <numeric>
 
 /************************************************************************/
@@ -39,23 +41,21 @@ enum class FMT_SetType
 struct FMT_AuxData
 {
 public:
-    FMT_AuxData (FMT_SetType _setType) :
+    FMT_AuxData (FMT_SetType _setType,
+                 const double _cost = std::numeric_limits<double>::max(),
+                 ompl::base::State* _parent = nullptr) :
         setType     (_setType),
+        cost        (_cost),
         nnSearched  (false),
-        cost        (std::numeric_limits<double>::max())
-    {}
-    
-    FMT_AuxData (FMT_SetType _setType, const double _cost) :
-        setType     (_setType),
-        nnSearched  (false),
-        cost        (_cost)
+        parent      (_parent)
     {}
     
 public:
-    FMT_SetType  setType;
-    bool         nnSearched;
-    double       cost;
-    stateVector  nbh;
+    FMT_SetType              setType;
+    double                   cost;
+    bool                     nnSearched;
+    const ompl::base::State* parent;
+    stateVector              nbh;
 }; // struct FMT_Aux
 
 /************************************************************************/
@@ -63,6 +63,10 @@ public:
 
 class FMT : public ompl::base::Planner
 {
+protected:
+    static constexpr unsigned DEFAULT_NUM_SAMPLES = 10000;
+    static constexpr double   DEFAULT_DIST_MULTIPLIER = 1.1;
+    
 public:
     FMT (const base::SpaceInformationPtr &si);
     
@@ -119,7 +123,7 @@ protected:
                        const unsigned samples) const;
     
     double neighborDistance (void) const;
-
+    
 protected:
     /*
      * The sampler of the provided state space.
@@ -135,22 +139,18 @@ protected:
      * The object used to perform the Near() query.
      */
     ompl::NearestNeighborsGNAT<const ompl::base::State*> V_;
-    
+
 protected:
-    unsigned numSamples_;
-    double   distMultiplier_ {1.0};
-    
-protected:
-    stateVector V_unvisited_;
-    stateVector V_open_;
-    stateVector V_closed_;
+    std::priority_queue< std::pair<double, const ompl::base::State*> >
+    V_open_;
     
     // Hashed map of the auxillary data of a node.
     std::unordered_map<const ompl::base::State*, FMT_AuxData> auxData_;
-    
-    // Container for the neighbors of a node.
-    //std::map<const ompl::base::State*, stateVector> nbhs_;
-    
+
+protected:
+    unsigned numSamples_     {DEFAULT_NUM_SAMPLES};
+    double   distMultiplier_ {DEFAULT_DIST_MULTIPLIER};
+        
 protected:
     double mu_free_; // The free space volume
     double r_n_; // The distance threshold for neighbors
