@@ -80,22 +80,22 @@ void PMR::FMT::setup (void)
 
 void PMR::FMT::clear (void)
 {
+    const unsigned reserveSize = numSamples_ + 5;
+        
     goal_ = nullptr;
     
     Planner::clear();
     sampler_.reset(); // Destroying sampler
     
-    free();
-    
-    const unsigned reserveSize = numSamples_ + 5;
-    
-    V_.clear();
+    auxData_.clear();
+    auxData_.reserve (reserveSize);
     
     while (V_open_.size())
         V_open_.pop();
     
-    auxData_.clear();
-    auxData_.reserve (reserveSize);
+    free();
+    
+    V_.clear();
 }
 
 /************************************************************************/
@@ -131,34 +131,28 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     /*
      * Adding start states to V_ and V_open_
      */
-    OMPL_DEBUG ("%s: calling sampleStart()", getName().c_str());
     sampleStart();
     
     /*
      * Sampling N states from the free configuration space.
      */
-    OMPL_DEBUG ("%s: calling sampleFree()", getName().c_str());
     sampleFree (tc);
     
     /*
      * Ensuring that there are states near the goals
      */
     
-    OMPL_DEBUG ("%s: About to perform dynamic_cast", getName().c_str());
     auto* goal = dynamic_cast<ompl::base::GoalSampleableRegion*> (
                                                 pdef_->getGoal().get());
-    OMPL_DEBUG ("%s: Performed dynamic_cast", getName().c_str());
     
     // Checking if goal is valid
     if (!goal) {
         
-        OMPL_ERROR ("%s: Invalid Goal", getName().c_str());
         return ompl::base::PlannerStatus::UNRECOGNIZED_GOAL_TYPE;
     }
     
-    OMPL_DEBUG ("%s: calling sampleGoal()", getName().c_str());
     sampleGoal (goal);
-    OMPL_DEBUG ("%s: called sampleGoal()", getName().c_str());
+    
     /*
      * Initialization for the main loop
      */
@@ -173,12 +167,6 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     
     saveNear (z);
     
-    OMPL_DEBUG ("%s: About to the enter the main loop", getName().c_str());
-    
-    OMPL_DEBUG ("%s: The number of samples : %u", getName().c_str(), numSamples_);
-    OMPL_DEBUG ("%s: The distMultiplier : %lf", getName().c_str(), distMultiplier_);
-    OMPL_DEBUG ("%s: The neighborDistance : %lf", getName().c_str(), r_n_);
-    
     stateVector nodes;
     V_.list (nodes);
     
@@ -188,7 +176,7 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     while (!tc) {
         
         if (goal->isSatisfied (z)) {
-            OMPL_DEBUG ("%s: Found solution", getName().c_str());
+            OMPL_INFORM ("%s: Found solution", getName().c_str());
             goal_ = z;
             
             addSolutionPath();
@@ -248,16 +236,10 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     
     typedef ompl::base::PlannerStatus PS;
     
-    if (tc) {
-        
-        OMPL_DEBUG ("%s: Suffered from timout", getName().c_str());
+    if (tc)
         return PS (PS::StatusType::TIMEOUT);
-    }
-    else {
-        
-        OMPL_DEBUG ("%s: Did not suffer from timout", getName().c_str());
+    else
         return PS (PS::StatusType::ABORT);
-    }
 }
 
 /************************************************************************/
@@ -313,11 +295,14 @@ void PMR::FMT::addSolutionPath (void)
 void PMR::FMT::sampleStart (void)
 {
     while (const ompl::base::State* start = pis_.nextStart()) {
-    
-        V_.add (start);
-        V_open_.emplace (0, start);
+        
+        ompl::base::State* node = si_->allocState();
+        si_->copyState (node, start);
+        
+        V_.add (node);
+        V_open_.emplace (0, node);
         auxData_.emplace (std::piecewise_construct,
-                          std::forward_as_tuple (start),
+                          std::forward_as_tuple (node),
                           std::forward_as_tuple (FMT_SetType::OPEN, 0));
     }
 }
@@ -361,16 +346,10 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
 
 void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
 {
-    OMPL_DEBUG ("%s: calling getThreshold()", getName().c_str());
     const auto threshold = goal->getThreshold();
-    
-    
-    OMPL_DEBUG ("%s: About to the enter the loop present in sampleGoal",
-                getName().c_str());
     
     // Ensuring that there a valid state near each goal.
     while (const ompl::base::State* goalState = pis_.nextGoal()) {
-        
         
         ompl::base::State* nearest = si_->allocState();
         V_.nearest (nearest);

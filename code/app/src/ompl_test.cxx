@@ -53,8 +53,8 @@ void OMPL_TEST::planWithoutSimpleSetup (void)
     planner->setup();
     
     // Prints
-    spaceInformation->printSettings(std::cerr);
-    pdef->print(std::cerr);
+    spaceInformation->printSettings(std::cout);
+    pdef->print(std::cout);
 
     // attempt to solve the problem in 1 second
     auto solved = planner->ob::Planner::solve (1.0);
@@ -62,14 +62,9 @@ void OMPL_TEST::planWithoutSimpleSetup (void)
     if (solved)
     {
         auto path = pdef->getSolutionPath();
-        std::cerr << "Found solution" << std::endl;
         if (path)
             path->print (std::cerr);
     }
-    else
-        std::cerr << "No solution found" << std::endl;
-    
-    std::cerr << "Reached end of plan" << std::endl;
 }
 
 /************************************************************************/
