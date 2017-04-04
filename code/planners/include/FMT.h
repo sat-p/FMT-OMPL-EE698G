@@ -11,6 +11,7 @@
 #include <vector>
 #include <unordered_map>
 //#include <map>
+#include <numeric>
 
 /************************************************************************/
 
@@ -19,11 +20,36 @@ namespace geometric {
 
 namespace EE698G {
 
+/************************************************************************/
+    
+typedef std::vector<const ompl::base::State*> stateVector;
+
+/************************************************************************/
+
+struct FMT_AuxData
+{
+public:
+    FMT_AuxData (void) :
+        nnSearched  (false),
+        cost        (std::numeric_limits<double>::max())
+    {}
+    
+    FMT_AuxData (const double _cost) :
+        nnSearched  (false),
+        cost        (_cost)
+    {}
+    
+public:
+    bool nnSearched;
+    double cost;
+    stateVector nbh;
+}; // struct FMT_Aux
+
+/************************************************************************/
+/************************************************************************/
+
 class FMT : public ompl::base::Planner
 {
-protected:
-    typedef std::vector<const ompl::base::State*> stateVector;
-    
 public:
     FMT (const base::SpaceInformationPtr &si);
     
@@ -106,8 +132,8 @@ protected:
     stateVector V_open_;
     stateVector V_closed_;
     
-    // Hashed map of neighborhood of a node.
-    std::unordered_map<const ompl::base::State*, stateVector> nbhs_;
+    // Hashed map of the auxillary data of a node.
+    std::unordered_map<const ompl::base::State*, FMT_AuxData> auxData_;
     
     // Container for the neighbors of a node.
     //std::map<const ompl::base::State*, stateVector> nbhs_;

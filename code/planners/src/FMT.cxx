@@ -70,7 +70,21 @@ void PMR::FMT::setup (void)
 
 void PMR::FMT::clear (void)
 {
+    const unsigned reserveSize = numSamples_ + 5;
     
+    V_.clear();
+    
+    V_unvisited_.clear();
+    V_unvisited_.resize (reserveSize);
+    
+    V_open_.clear();
+    V_open_.reserve (reserveSize);
+    
+    V_closed_.clear();
+    V_closed_.reserve (reserveSize);
+    
+    auxData_.clear();
+    auxData_.reserve (reserveSize);
 }
 
 /************************************************************************/
@@ -85,6 +99,12 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
         OMPL_ERROR ("%s: Invalid Start", getName().c_str());
         return ompl::base::PlannerStatus::INVALID_START;
     }
+    
+    /*
+     * Clearing data of previous run
+     */
+    
+    clear();
     
     /*
      * Adding start states to V_ and V_open_
@@ -113,18 +133,20 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     }
     
     sampleGoal (goal);
-        
+    
     /*
-     * The main loop
+     * Initialization for the main loop
      */
     
-    V_closed_.clear();
     r_n_ = neighborDistance();
     
     // Choosing one of the start states.
     const ompl::base::State* z = V_open_.front(); 
     saveNear (z);
     
+    /*
+     * The main loop
+     */
     while (!tc) {
         
         if (goal->isSatisfied (z)) {
@@ -156,13 +178,11 @@ void PMR::FMT::getPlannerData (ompl::base::PlannerData &data) const
 
 void PMR::FMT::sampleStart (void)
 {
-    V_open_.clear();
-    V_.clear();
-    
     while (const ompl::base::State* start = pis_.nextStart()) {
     
         V_.add (start);
         V_open_.push_back (start);
+        auxData_[start];
     }
 }
 
@@ -171,9 +191,6 @@ void PMR::FMT::sampleStart (void)
 void
 PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
 {
-    V_unvisited_.clear();
-    V_unvisited_.resize (numSamples_);
-    
     unsigned attempts = 0;
     unsigned numSampled = 0;
     
@@ -190,7 +207,10 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
         if (si_->isValid (sample)) {
         
             ++numSampled;
+            
             V_unvisited_.push_back (sample);
+            auxData_[sample];
+            
             sample = si_->allocState();
         }
     }
@@ -220,6 +240,7 @@ void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
             
             V_unvisited_.push_back (goalState);
             V_.add (goalState);
+            auxData_.emplace (goalState, 0);
         }
     }
 }
@@ -229,19 +250,12 @@ void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
 
 void PMR::FMT::saveNear (const ompl::base::State* z)
 {
-    // Store the neighborhood if it hasn't already been stored.
-    if (nbhs_.find (z) == nbhs_.end()) {
-        
-        stateVector nbh;
-        V_.nearestR (z, r_n_, nbh);
-        
-        // Adding all the nodes found other than first element since it
-        // will be z itself.
-        nbhs_.emplace (std::piecewise_construct,
-                       std::forward_as_tuple (z),
-                       std::forward_as_tuple (nbh.begin() + 1,
-                                              nbh.end()));
-    }
+    auto& zData = auxData_[z];
+    
+    if (zData.nnSearched)
+        return;
+    else
+        V_.nearestR (z, r_n_, zData.nbh);
 }
 
 /************************************************************************/
