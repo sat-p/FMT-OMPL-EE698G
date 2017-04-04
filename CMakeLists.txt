@@ -14,7 +14,8 @@ include_directories(${solverdir}
 
 #Adding sources
 set(SOURCES ${solverdir}/code/app/src/Application.cxx
-            ${solverdir}/code/planners/src/FMT.cxx)
+            ${solverdir}/code/planners/src/FMT.cxx
+            ${solverdir}/code/app/src/ompl_test.cxx)
 
 #Compile
 add_executable(ee698g ${SOURCES})

@@ -1,7 +1,12 @@
+#include "../include/ompl_test.h"
+
 /************************************************************************/
 
 int main (void)
 {
+    OMPL_TEST test;
+    test.planWithoutSimpleSetup();
+    
     return 0;
 }
 
