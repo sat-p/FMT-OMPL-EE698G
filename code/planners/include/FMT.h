@@ -9,6 +9,8 @@
 #include <ompl/datastructures/NearestNeighborsGNAT.h>
 
 #include <vector>
+#include <unordered_map>
+//#include <map>
 
 /************************************************************************/
 
@@ -19,6 +21,9 @@ namespace EE698G {
 
 class FMT : public ompl::base::Planner
 {
+protected:
+    typedef std::vector<const ompl::base::State*> stateVector;
+    
 public:
     FMT (const base::SpaceInformationPtr &si);
     
@@ -66,6 +71,9 @@ protected:
     void sampleGoal (const ompl::base::GoalSampleableRegion* goal);
 
 protected:
+    void saveNear (const ompl::base::State* z);
+    
+protected:
     double unitBallVolume (const unsigned dim) const;
     
     double freeVolume (const unsigned attempts,
@@ -94,10 +102,16 @@ protected:
     double   distMultiplier_ {1.0};
     
 protected:
-    std::vector<const ompl::base::State*> V_unvisited_;
-    std::vector<const ompl::base::State*> V_open_;
-    std::vector<const ompl::base::State*> V_closed_;
-
+    stateVector V_unvisited_;
+    stateVector V_open_;
+    stateVector V_closed_;
+    
+    // Hashed map of neighborhood of a node.
+    std::unordered_map<const ompl::base::State*, stateVector> nbhs_;
+    
+    // Container for the neighbors of a node.
+    //std::map<const ompl::base::State*, stateVector> nbhs_;
+    
 protected:
     double mu_free_; // The free space volume
     double r_n_; // The distance threshold for neighbors

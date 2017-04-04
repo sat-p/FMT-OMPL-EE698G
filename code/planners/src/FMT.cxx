@@ -113,7 +113,7 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     }
     
     sampleGoal (goal);
-    
+        
     /*
      * The main loop
      */
@@ -121,6 +121,23 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     V_closed_.clear();
     r_n_ = neighborDistance();
     
+    // Choosing one of the start states.
+    const ompl::base::State* z = V_open_.front(); 
+    saveNear (z);
+    
+    while (!tc) {
+        
+        if (goal->isSatisfied (z)) {
+        
+            typedef ompl::base::PlannerStatus PS;
+            return PS (PS::StatusType::EXACT_SOLUTION);
+        }
+        
+        stateVector V_open_new;
+        
+//         auto X_near = 
+        
+    }
     
     typedef ompl::base::PlannerStatus PS;
     return PS (PS::StatusType::EXACT_SOLUTION);
@@ -167,7 +184,7 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
     while (numSampled < numSamples_ && !tc) {
         ++attempts;
         
-        sampler_->sampleUniform  (sample);
+        sampler_->sampleUniform (sample);
         
         // Checking if the sampled point is valid
         if (si_->isValid (sample)) {
@@ -204,6 +221,26 @@ void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
             V_unvisited_.push_back (goalState);
             V_.add (goalState);
         }
+    }
+}
+
+/************************************************************************/
+/************************************************************************/
+
+void PMR::FMT::saveNear (const ompl::base::State* z)
+{
+    // Store the neighborhood if it hasn't already been stored.
+    if (nbhs_.find (z) == nbhs_.end()) {
+        
+        stateVector nbh;
+        V_.nearestR (z, r_n_, nbh);
+        
+        // Adding all the nodes found other than first element since it
+        // will be z itself.
+        nbhs_.emplace (std::piecewise_construct,
+                       std::forward_as_tuple (z),
+                       std::forward_as_tuple (nbh.begin() + 1,
+                                              nbh.end()));
     }
 }
 
