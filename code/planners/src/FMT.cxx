@@ -17,13 +17,24 @@ PMR::FMT::FMT (const base::SpaceInformationPtr &si) :
     ompl::base::Planner (si, "PMR EE698G"),
     sampler_            (si->allocStateSampler())
 {
+    /*
+     * Declaring parameters.
+     */
+    typedef ompl::base::Planner Planner;
+    
+    Planner::declareParam<unsigned> ("numSamples", this,
+                                     &FMT::setNumSamples,
+                                     &FMT::getNumSamples);
+    
+    Planner::declareParam<double> ("distMultiplier", this,
+                                   &FMT::setDistMultiplier,
+                                   &FMT::getDistMultiplier);
 }
 
 /************************************************************************/
 
 PMR::FMT::~FMT (void)
 {
-    
 }
 
 /************************************************************************/
@@ -55,9 +66,8 @@ void PMR::FMT::setup (void)
     }
     
     V_.setDistanceFunction ([this](const ompl::base::State* x1,
-                                   const ompl::base::State* x2) {
-                                return opt_->motionCost(x1, x2).value();
-                           });
+                                   const ompl::base::State* x2)
+                            { return opt_->motionCost(x1, x2).value(); });
     
     // Checking if current state is valid.
     // Calls parent class's member function checkValidity();
@@ -71,6 +81,13 @@ void PMR::FMT::setup (void)
 
 void PMR::FMT::clear (void)
 {
+    goal_ = nullptr;
+    
+    Planner::clear();
+    sampler_.reset(); // Destroying sampler
+    
+    free();
+    
     const unsigned reserveSize = numSamples_ + 5;
     
     V_.clear();
@@ -80,6 +97,18 @@ void PMR::FMT::clear (void)
     
     auxData_.clear();
     auxData_.reserve (reserveSize);
+}
+
+/************************************************************************/
+/************************************************************************/
+
+void PMR::FMT::free (void)
+{
+    stateVector nodes;
+    V_.list (nodes); // Fetching all nodes;
+    
+    for (auto* it : nodes)
+        si_->freeState (const_cast<ompl::base::State*> (it));   
 }
 
 /************************************************************************/
@@ -149,12 +178,12 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     while (!tc) {
         
         if (goal->isSatisfied (z)) {
-        
+            
+            goal_ = z;
+            
             typedef ompl::base::PlannerStatus PS;
             return PS (PS::StatusType::EXACT_SOLUTION);
         }
-        
-        //stateVector V_open_new;
         
         auto& zData = auxData_.at (z);
         
@@ -197,17 +226,18 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
         zData.setType = FMT_SetType::CLOSED;
         V_open_.pop();
         
-        if (V_open_.empty()) {
-        
-            typedef ompl::base::PlannerStatus PS;
-            return PS (PS::StatusType::ABORT);
-        }
+        if (V_open_.empty())
+            break;
         
         std::tie (cost, z) = V_open_.top();
     }
     
     typedef ompl::base::PlannerStatus PS;
-    return PS (PS::StatusType::EXACT_SOLUTION);
+    
+    if (tc)
+        return PS (PS::StatusType::TIMEOUT);
+    else
+        return PS (PS::StatusType::ABORT);
 }
 
 /************************************************************************/
@@ -215,7 +245,18 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
 
 void PMR::FMT::getPlannerData (ompl::base::PlannerData &data) const
 {
+    Planner::getPlannerData (data);
     
+    if (goal_)
+        data.addGoalVertex (goal_);
+    
+    for (const auto& aux : auxData_) {
+    
+        if (aux.second.parent)
+            data.addEdge (aux.second.parent, aux.first);
+        else
+            data.addStartVertex (aux.first);
+    }
 }
 
 /************************************************************************/
@@ -244,7 +285,7 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
     ompl::base::State* sample = si_->allocState();
     
     // Keep on sampling until the required number of samples haven't
-    // been samples and the termination condition has not been met.
+    // been sampled and the termination condition has not been met.
     while (numSampled < numSamples_ && !tc) {
         ++attempts;
         

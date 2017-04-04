@@ -10,7 +10,6 @@
 
 #include <vector>
 #include <unordered_map>
-//#include <map>
 #include <queue>
 #include <utility>
 #include <numeric>
@@ -75,6 +74,8 @@ public:
 public:
     void setup (void) override;
     void clear (void) override;
+    
+    void free  (void);
     
 public:
     base::PlannerStatus
@@ -154,6 +155,9 @@ protected:
 protected:
     double mu_free_; // The free space volume
     double r_n_; // The distance threshold for neighbors
+    
+protected:
+    const ompl::base::State* goal_ {nullptr};
 }; // class FMT
     
 }; // namespace EE698G
