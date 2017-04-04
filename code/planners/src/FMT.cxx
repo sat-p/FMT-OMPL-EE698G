@@ -1,8 +1,14 @@
 #include "../include/FMT.h"
 
+#include <cmath>
+
 /************************************************************************/
 
 namespace PMR = ompl::geometric::EE698G;
+
+/************************************************************************/
+
+static constexpr double pi = 3.14159265359;
 
 /************************************************************************/
 
@@ -108,6 +114,14 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
     
     sampleGoal (goal);
     
+    /*
+     * The main loop
+     */
+    
+    V_closed_.clear();
+    r_n_ = neighborDistance();
+    
+    
     typedef ompl::base::PlannerStatus PS;
     return PS (PS::StatusType::EXACT_SOLUTION);
 }
@@ -167,6 +181,9 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
     V_.add (V_unvisited_);
     
     si_->freeState (sample);
+    
+    // Setting the best estimate of the free Volume.
+    mu_free_ = freeVolume (attempts, numSampled);
 }
 
 /************************************************************************/
@@ -188,6 +205,46 @@ void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
             V_.add (goalState);
         }
     }
+}
+
+/************************************************************************/
+/************************************************************************/
+
+double PMR::FMT::unitBallVolume (const unsigned dim) const
+{
+    if (!dim)
+        return 1.0;
+    else if (dim == 1)
+        return 2.0;
+    else
+        return 2 * pi * unitBallVolume (dim - 2) / dim;
+}
+
+/************************************************************************/
+
+double PMR::FMT::freeVolume
+(const unsigned attempts, const unsigned samples) const
+{
+    return  (si_->getSpaceMeasure() / attempts) * samples;
+}
+
+/************************************************************************/
+
+double PMR::FMT::neighborDistance (void) const
+{
+    const double d = si_->getStateDimension();
+    const double d_inv = 1 / d;
+    
+    const double ballVolume = unitBallVolume (d);
+    
+    const double gamma = 2 * std::pow (d_inv * mu_free_ / ballVolume,
+                                       d_inv);
+    
+    const unsigned& n = numSamples_;
+    
+    return distMultiplier_ * gamma *
+           std::pow (std::log (static_cast <double> (n)) / n,
+                     d_inv);
 }
 
 /************************************************************************/

@@ -42,6 +42,12 @@ public:
     unsigned getNumSamples (void) const
     { return numSamples_; }
     
+    void setDistMultiplier (const double m)
+    { distMultiplier_ = m; }
+    
+    double getDistMultiplier (void) const
+    { return distMultiplier_; }
+    
 protected:
     /*
      * Samples the start states
@@ -58,7 +64,15 @@ protected:
      * Samples states near the goals if absent.
      */
     void sampleGoal (const ompl::base::GoalSampleableRegion* goal);
+
+protected:
+    double unitBallVolume (const unsigned dim) const;
     
+    double freeVolume (const unsigned attempts,
+                       const unsigned samples) const;
+    
+    double neighborDistance (void) const;
+
 protected:
     /*
      * The sampler of the provided state space.
@@ -77,11 +91,16 @@ protected:
     
 protected:
     unsigned numSamples_;
+    double   distMultiplier_ {1.0};
     
 protected:
     std::vector<const ompl::base::State*> V_unvisited_;
     std::vector<const ompl::base::State*> V_open_;
-    
+    std::vector<const ompl::base::State*> V_closed_;
+
+protected:
+    double mu_free_; // The free space volume
+    double r_n_; // The distance threshold for neighbors
 }; // class FMT
     
 }; // namespace EE698G
