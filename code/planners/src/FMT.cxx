@@ -10,7 +10,6 @@ PMR::FMT::FMT (const base::SpaceInformationPtr &si) :
     ompl::base::Planner (si, "PMR EE698G"),
     sampler_            (si->allocStateSampler())
 {
-    
 }
 
 /************************************************************************/
@@ -25,6 +24,34 @@ PMR::FMT::~FMT (void)
 
 void PMR::FMT::setup (void)
 {
+    // Checking if the problem definition has been set
+    if (!pdef_) {
+    
+        OMPL_ERROR ("%s : setup() called without problem definition"
+                    " being set. Setup canceled", getName().c_str());
+        setup_ = false;
+        
+        return;
+    }
+    
+    if (pdef_->hasOptimizationObjective())
+        opt_ = pdef_->getOptimizationObjective();
+    else {
+    
+        OMPL_INFORM ("%s : Problem definition lacks optimization objective."
+                     " Using path length.", getName().c_str());
+        
+        typedef ompl::base::PathLengthOptimizationObjective PLO;
+        
+        opt_ = std::make_shared<PLO> (si_);
+        pdef_->setOptimizationObjective (opt_);
+    }
+    
+    V_.setDistanceFunction ([this](const ompl::base::State* x1,
+                                   const ompl::base::State* x2) {
+                                return opt_->motionCost(x1, x2).value();
+                           });
+    
     // Checking if current state is valid.
     // Calls parent class's member function checkValidity();
     // Throws exception if the planner is in an invalid state.

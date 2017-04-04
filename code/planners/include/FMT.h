@@ -4,6 +4,8 @@
 /************************************************************************/
 
 #include <ompl/geometric/planners/PlannerIncludes.h>
+#include <ompl/base/objectives/PathLengthOptimizationObjective.h>
+#include <ompl/datastructures/NearestNeighborsGNAT.h>
 
 #include <vector>
 
@@ -45,13 +47,23 @@ protected:
      * termination condition is not met.
      */
     void sampleFree (const ompl::base::PlannerTerminationCondition &tc);
-
+    
 protected:
     /*
      * The sampler of the provided state space.
      */
-    base::StateSamplerPtr sampler_;
+    ompl::base::StateSamplerPtr sampler_;
 
+    /*
+     * The optimization objective object
+     */
+    ompl::base::OptimizationObjectivePtr opt_;
+    
+    /*
+     * The object used to perform the Near() query.
+     */
+    ompl::NearestNeighborsGNAT<ompl::base::State*> V_;
+    
 protected:
     unsigned numSamples_;
     
