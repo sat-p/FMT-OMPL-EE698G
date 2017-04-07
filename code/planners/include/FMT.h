@@ -41,12 +41,11 @@ struct FMT_AuxData
 {
 public:
     FMT_AuxData (FMT_SetType _setType,
-                 const double _cost = std::numeric_limits<double>::max(),
-                 ompl::base::State* _parent = nullptr) :
+                 const double _cost = std::numeric_limits<double>::max()):
         setType     (_setType),
         cost        (_cost),
         nnSearched  (false),
-        parent      (_parent)
+        parent      (nullptr)
     {}
     
 public:
@@ -60,16 +59,16 @@ public:
 /************************************************************************/
 /************************************************************************/
 
-class FMT : public ompl::base::Planner
+class FMTclone : public ompl::base::Planner
 {
 protected:
     static constexpr unsigned DEFAULT_NUM_SAMPLES = 1000;
     static constexpr double   DEFAULT_DIST_MULTIPLIER = 1.1;
     
 public:
-    FMT (const base::SpaceInformationPtr &si);
+    FMTclone (const base::SpaceInformationPtr &si);
     
-    ~FMT (void) override;
+    ~FMTclone (void) override;
     
 public:
     void setup (void) override;

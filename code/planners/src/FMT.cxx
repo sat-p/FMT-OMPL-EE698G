@@ -5,7 +5,7 @@
 
 /************************************************************************/
 
-namespace PMR = ompl::geometric::EE698G;
+typedef ompl::geometric::EE698G::FMTclone FMTClass;
 
 /************************************************************************/
 
@@ -14,7 +14,7 @@ static constexpr double maxDouble = std::numeric_limits<double>::max();
 
 /************************************************************************/
 
-PMR::FMT::FMT (const base::SpaceInformationPtr &si) :
+FMTClass::FMTclone (const base::SpaceInformationPtr &si) :
     ompl::base::Planner (si, "PMR EE698G")
 {
     /*
@@ -23,17 +23,17 @@ PMR::FMT::FMT (const base::SpaceInformationPtr &si) :
     typedef ompl::base::Planner Planner;
     
     Planner::declareParam<unsigned> ("numSamples", this,
-                                     &FMT::setNumSamples,
-                                     &FMT::getNumSamples);
+                                     &FMTclone::setNumSamples,
+                                     &FMTclone::getNumSamples);
     
     Planner::declareParam<double> ("distMultiplier", this,
-                                   &FMT::setDistMultiplier,
-                                   &FMT::getDistMultiplier);
+                                   &FMTclone::setDistMultiplier,
+                                   &FMTclone::getDistMultiplier);
 }
 
 /************************************************************************/
 
-PMR::FMT::~FMT (void)
+FMTClass::~FMTclone (void)
 {
     free();
 }
@@ -41,7 +41,7 @@ PMR::FMT::~FMT (void)
 /************************************************************************/
 /************************************************************************/
 
-void PMR::FMT::setup (void)
+void FMTClass::setup (void)
 {
     // Setting up the sampler
     sampler_ = si_->allocStateSampler();
@@ -78,7 +78,7 @@ void PMR::FMT::setup (void)
 
 /************************************************************************/
 
-void PMR::FMT::clear (void)
+void FMTClass::clear (void)
 {
     const unsigned reserveSize = numSamples_ + 5;
         
@@ -101,7 +101,7 @@ void PMR::FMT::clear (void)
 /************************************************************************/
 /************************************************************************/
 
-void PMR::FMT::free (void)
+void FMTClass::free (void)
 {
     stateVector nodes;
     V_.list (nodes); // Fetching all nodes;
@@ -114,7 +114,7 @@ void PMR::FMT::free (void)
 /************************************************************************/
 
 ompl::base::PlannerStatus
-PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
+FMTClass::solve (const base::PlannerTerminationCondition &tc)
 {
     // Checking if current state is valid.
     // Calls parent class's member function checkValidity();
@@ -245,7 +245,7 @@ PMR::FMT::solve (const base::PlannerTerminationCondition &tc)
 /************************************************************************/
 /************************************************************************/
 
-void PMR::FMT::getPlannerData (ompl::base::PlannerData &data) const
+void FMTClass::getPlannerData (ompl::base::PlannerData &data) const
 {
     Planner::getPlannerData (data);
     
@@ -263,7 +263,7 @@ void PMR::FMT::getPlannerData (ompl::base::PlannerData &data) const
 
 /************************************************************************/
 
-void PMR::FMT::addSolutionPath (void)
+void FMTClass::addSolutionPath (void)
 {
     if (goal_ == nullptr)
         return;
@@ -292,7 +292,7 @@ void PMR::FMT::addSolutionPath (void)
 /************************************************************************/
 /************************************************************************/
 
-void PMR::FMT::sampleStart (void)
+void FMTClass::sampleStart (void)
 {
     while (const ompl::base::State* start = pis_.nextStart()) {
         
@@ -310,7 +310,7 @@ void PMR::FMT::sampleStart (void)
 /************************************************************************/
     
 void
-PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
+FMTClass::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
 {
     unsigned attempts = 0;
     unsigned numSampled = 0;
@@ -344,7 +344,7 @@ PMR::FMT::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
 
 /************************************************************************/
 
-void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
+void FMTClass::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
 {
     const auto threshold = goal->getThreshold();
     
@@ -369,7 +369,7 @@ void PMR::FMT::sampleGoal (const ompl::base::GoalSampleableRegion* goal)
 /************************************************************************/
 /************************************************************************/
 
-void PMR::FMT::saveNear (const ompl::base::State* z)
+void FMTClass::saveNear (const ompl::base::State* z)
 {
     auto& zData = auxData_.at (z);
     
@@ -385,7 +385,7 @@ void PMR::FMT::saveNear (const ompl::base::State* z)
 /************************************************************************/
 /************************************************************************/
 
-double PMR::FMT::unitBallVolume (const unsigned dim) const
+double FMTClass::unitBallVolume (const unsigned dim) const
 {
     if (!dim)
         return 1.0;
@@ -397,7 +397,7 @@ double PMR::FMT::unitBallVolume (const unsigned dim) const
 
 /************************************************************************/
 
-double PMR::FMT::freeVolume
+double FMTClass::freeVolume
 (const unsigned attempts, const unsigned samples) const
 {
     return  (si_->getSpaceMeasure() / attempts) * samples;
@@ -405,7 +405,7 @@ double PMR::FMT::freeVolume
 
 /************************************************************************/
 
-double PMR::FMT::neighborDistance (void) const
+double FMTClass::neighborDistance (void) const
 {
     const double d = si_->getStateDimension();
     const double d_inv = 1 / d;

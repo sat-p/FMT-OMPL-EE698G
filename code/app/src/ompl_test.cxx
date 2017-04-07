@@ -43,7 +43,7 @@ void OMPL_TEST::planWithoutSimpleSetup (void)
     pdef->setStartAndGoalStates (start, goal);
     
     // creating a planner
-    auto planner (std::make_shared<og::EE698G::FMT> (spaceInformation));
+    auto planner (std::make_shared<og::EE698G::FMTclone> (spaceInformation));
     //auto planner (std::make_shared<og::FMT> (spaceInformation));
     
     // setting problem for the planner.
