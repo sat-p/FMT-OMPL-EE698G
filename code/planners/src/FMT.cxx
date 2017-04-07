@@ -8,7 +8,7 @@
  * 
  */
 
-#include <ompl/geometric/planners/fmt/FMTclone.h>
+#include "../include/FMT.h"
 
 #include <cmath>
 #include <stack>
