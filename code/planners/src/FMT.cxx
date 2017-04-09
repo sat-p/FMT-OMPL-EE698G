@@ -9,7 +9,7 @@ typedef ompl::geometric::EE698G::FMTclone FMTClass;
 
 /************************************************************************/
 
-static constexpr double pi = 3.14159265359;
+static constexpr double e = 2.71828182845904523536028747135266249775;
 static constexpr double maxDouble = std::numeric_limits<double>::max();
 
 /************************************************************************/
@@ -161,9 +161,11 @@ FMTClass::solve (const base::PlannerTerminationCondition &tc)
      * Initialization for the main loop
      */
     
-    r_n_ = neighborDistance();
+    k_ = neighborK();
     
-    OMPL_INFORM ("%s : The value of r_n_ is %lf", getName().c_str(), r_n_);
+    OMPL_INFORM ("%s : The value of k_ is %u", getName().c_str(), k_);
+    OMPL_INFORM ("%s : The number of samples is %u", getName().c_str(),
+                                                            numSamples_);
     
     // Choosing one of the start states.
     double cost;
@@ -347,9 +349,6 @@ FMTClass::sampleFree (const ompl::base::PlannerTerminationCondition &tc)
     }
     
     si_->freeState (sample);
-    
-    // Setting the best estimate of the free Volume.
-    mu_free_ = freeVolume (attempts, numSampled);
 }
 
 /************************************************************************/
@@ -388,48 +387,21 @@ void FMTClass::saveNear (const ompl::base::State* z)
     else {
         
         zData.nnSearched = true;
-        V_.nearestR (z, r_n_, zData.nbh);
+        V_.nearestK (z, k_, zData.nbh);
     }
 }
 
 /************************************************************************/
 /************************************************************************/
 
-double FMTClass::unitBallVolume (const unsigned dim) const
+double FMTClass::neighborK (void) const
 {
-    if (!dim)
-        return 1.0;
-    else if (dim == 1)
-        return 2.0;
-    else
-        return 2 * pi * unitBallVolume (dim - 2) / dim;
-}
-
-/************************************************************************/
-
-double FMTClass::freeVolume
-(const unsigned attempts, const unsigned samples) const
-{
-    return  (si_->getSpaceMeasure() / attempts) * samples;
-}
-
-/************************************************************************/
-
-double FMTClass::neighborDistance (void) const
-{
+    
     const double d = si_->getStateDimension();
     const double d_inv = 1 / d;
     
-    const double ballVolume = unitBallVolume (d);
-    
-    const double gamma = 2 * std::pow (d_inv * mu_free_ / ballVolume,
-                                       d_inv);
-    
-    const unsigned& n = numSamples_;
-    
-    return distMultiplier_ * gamma *
-           std::pow (std::log (static_cast <double> (n)) / n,
-                     d_inv);
+    return std::pow (distMultiplier_ * 2, d) * e * (1 + d_inv) *
+           std::log (static_cast <double> (numSamples_));
 }
 
 /************************************************************************/

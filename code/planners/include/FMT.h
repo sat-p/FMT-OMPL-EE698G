@@ -121,14 +121,9 @@ protected:
 
 protected:
     void saveNear (const ompl::base::State* z);
-    
+
 protected:
-    double unitBallVolume (const unsigned dim) const;
-    
-    double freeVolume (const unsigned attempts,
-                       const unsigned samples) const;
-    
-    double neighborDistance (void) const;
+    double neighborK (void) const;
     
 protected:
     /*
@@ -160,7 +155,7 @@ protected:
         
 protected:
     double mu_free_; // The free space volume
-    double r_n_; // The distance threshold for neighbors
+    unsigned k_; // The value of k for nearest neighbor serarch
     
 protected:
     const ompl::base::State* goal_;
