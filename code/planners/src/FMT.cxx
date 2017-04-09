@@ -1,13 +1,3 @@
-/*
- * File copied from the github repsoitory on 5th April 2017 :
- * https://github.com/sat-p/FMT-OMPL-EE698G
- * 
- * This implementaion of Fast Marching Tree* has been implemented as part
- * of a course project for EE698G : Probabilistic Mobile Robotics,
- * Indian Institure of Technology, Kanpur
- * 
- */
-
 #include "../include/FMT.h"
 
 #include <cmath>
@@ -34,18 +24,22 @@ FMTClass::FMTclone (const base::SpaceInformationPtr &si) :
     
     Planner::declareParam<unsigned> ("numSamples", this,
                                      &FMTclone::setNumSamples,
-                                     &FMTclone::getNumSamples);
+                                     &FMTclone::getNumSamples,
+                                     "1:10:1000000");
     
     Planner::declareParam<double> ("distMultiplier", this,
                                    &FMTclone::setDistMultiplier,
-                                   &FMTclone::getDistMultiplier);
+                                   &FMTclone::getDistMultiplier,
+                                   "0.1:0.01:10.");
+    
+    std::cerr << "Exiting Constructor of FMTclone" << std::endl;
 }
 
 /************************************************************************/
 
 FMTClass::~FMTclone (void)
 {
-    free();
+    clear();
 }
 
 /************************************************************************/
@@ -117,7 +111,7 @@ void FMTClass::free (void)
     V_.list (nodes); // Fetching all nodes;
     
     for (auto* it : nodes)
-        si_->freeState (const_cast<ompl::base::State*> (it));   
+        si_->freeState (const_cast<ompl::base::State*> (it));
 }
 
 /************************************************************************/
@@ -168,6 +162,8 @@ FMTClass::solve (const base::PlannerTerminationCondition &tc)
      */
     
     r_n_ = neighborDistance();
+    
+    OMPL_INFORM ("%s : The value of r_n_ is %lf", getName().c_str(), r_n_);
     
     // Choosing one of the start states.
     double cost;
@@ -246,10 +242,7 @@ FMTClass::solve (const base::PlannerTerminationCondition &tc)
     
     typedef ompl::base::PlannerStatus PS;
     
-    if (tc)
-        return PS (PS::StatusType::TIMEOUT);
-    else
-        return PS (PS::StatusType::ABORT);
+    return PS (PS::StatusType::TIMEOUT);
 }
 
 /************************************************************************/
@@ -257,17 +250,24 @@ FMTClass::solve (const base::PlannerTerminationCondition &tc)
 
 void FMTClass::getPlannerData (ompl::base::PlannerData &data) const
 {
+    typedef ompl::base::PlannerDataVertex data_t;
+    
     Planner::getPlannerData (data);
     
-    if (goal_)
-        data.addGoalVertex (goal_);
+//     if (goal_)
+//         data.addGoalVertex (data_t (goal_));
     
     for (const auto& aux : auxData_) {
-    
+        
+        data.addVertex (data_t (aux.first));
+        
+        if (aux.second.setType == FMT_SetType::UNVISITED)
+            continue;
+        
         if (aux.second.parent)
-            data.addEdge (aux.second.parent, aux.first);
+            data.addEdge (data_t (aux.second.parent), data_t (aux.first));
         else
-            data.addStartVertex (aux.first);
+            data.addStartVertex (data_t (aux.first));
     }
 }
 
