@@ -10,6 +10,7 @@ typedef ompl::geometric::EE698G::FMTclone FMTClass;
 /************************************************************************/
 
 static constexpr double pi = 3.14159265359;
+static constexpr double e = 2.71828182845904523536028747135266249775; 
 static constexpr double maxDouble = std::numeric_limits<double>::max();
 
 /************************************************************************/
@@ -31,6 +32,11 @@ FMTClass::FMTclone (const base::SpaceInformationPtr &si) :
                                    &FMTclone::setDistMultiplier,
                                    &FMTclone::getDistMultiplier,
                                    "0.1:0.01:10.");
+    
+    Planner::declareParam<bool> ("KNN", this,
+                                 &FMTclone::setKNN,
+                                 &FMTclone::getKNN,
+                                 "0,1");
     
     std::cerr << "Exiting Constructor of FMTclone" << std::endl;
 }
@@ -161,9 +167,17 @@ FMTClass::solve (const base::PlannerTerminationCondition &tc)
      * Initialization for the main loop
      */
     
-    r_n_ = neighborDistance();
-    
-    OMPL_INFORM ("%s : The value of r_n_ is %lf", getName().c_str(), r_n_);
+    if (knn_) {
+
+        k_ = neighborK();
+        OMPL_INFORM ("%s : The value of k_ is %u", getName().c_str(), k_);
+
+    } else {
+        
+        r_n_ = neighborDistance();
+        OMPL_INFORM ("%s : The value of r_n_ is %lf", getName().c_str(),
+                                                      r_n_);
+    }
     
     // Choosing one of the start states.
     double cost;
@@ -388,8 +402,24 @@ void FMTClass::saveNear (const ompl::base::State* z)
     else {
         
         zData.nnSearched = true;
-        V_.nearestR (z, r_n_, zData.nbh);
+
+        if (knn_)
+            V_.nearestK (z, k_, zData.nbh);
+        else
+            V_.nearestR (z, r_n_, zData.nbh);
     }
+}
+
+/************************************************************************/
+/************************************************************************/
+
+double FMTClass::neighborK (void) const
+{
+    const double d = si_->getStateDimension();
+    const double d_inv = 1 / d;
+                
+    return std::pow (distMultiplier_ * 2, d) * e * (1 + d_inv) *
+           std::log (static_cast <double> (numSamples_));
 }
 
 /************************************************************************/

@@ -99,6 +99,12 @@ public:
     double getDistMultiplier (void) const
     { return distMultiplier_; }
 
+    void setKNN (const bool b)
+    { knn_ = b; }
+    
+    bool getKNN (void) const
+    { return knn_; }
+    
 protected:
     void addSolutionPath (void);
     
@@ -121,7 +127,10 @@ protected:
 
 protected:
     void saveNear (const ompl::base::State* z);
-    
+
+protected:
+    double neighborK (void) const;
+
 protected:
     double unitBallVolume (const unsigned dim) const;
     
@@ -157,9 +166,12 @@ protected:
 protected:
     unsigned numSamples_     {DEFAULT_NUM_SAMPLES};
     double   distMultiplier_ {DEFAULT_DIST_MULTIPLIER};
-        
+    
+    bool     knn_            {false};
+    
 protected:
     double mu_free_; // The free space volume
+    unsigned k_; // The value of k for nearest neighbor serarch
     double r_n_; // The distance threshold for neighbors
     
 protected:
